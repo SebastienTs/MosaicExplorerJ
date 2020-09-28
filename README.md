@@ -13,8 +13,8 @@ An ImageJ script to align and stitch three-dimensional tiles and quickly explore
 **Emb3_2x2_Mosaic_2CAMs_12GB (8 GB compressed)**
 Test dataset 3D cropped out from a similar sample. 2 columns x 2 rows with 2 camera views. Tiles stored as subfolders of 2D TIFF. Should be opened with Dual camera ticked to browse both camera views.
 
-**Brain2_izq_2x8Mosaic_LeftSide_300GB (Raw)**
+**Brain2_izq_2x8Mosaic_LeftSide_300GB (300 GB raw)**
 Left side (2 columns x 8 rows mosaic) from a dual side scan with both sides having a large overlap in the central column. Tiles are stored as 3D TIFF. Should be opened with Dual side ticked.
 
-**Brain2_izq_2x8Mosaic_RightSide_ExtraTiles_300GB (Raw)**
+**Brain2_izq_2x8Mosaic_RightSide_ExtraTiles_300GB (300 GB raw)**
 Right side tiles from the previous scan. Should be moved to the same folder as the tiles from left side.
