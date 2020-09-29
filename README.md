@@ -14,4 +14,4 @@ Mouse embryo head, 4 columns x 5 rows mosaic, 2 camera views. Tiles are stored a
 Mouse embryo head, 3D cropped out volume from a complete scan, 2 columns x 2 rows mosaic, 2 camera views. Tiles are stored as series of 2D TIFF files. Should be opened by MosaicExplorerJ with Dual camera ticked to browse both camera views.
 
 **Brain2_izq_2x8Mosaic_LeftSide_300GB (300 GB raw)**
-Mouse brain, left illumination side (2 columns x 8 rows mosaic) from a dual side scan. Tiles are stored as 3D TIFF images. Should be opened by MosaicExplorerJ with Dual side ticked.
+Mouse brain, left illumination side (2 columns x 8 rows mosaic) from a dual side scan. Tiles are stored as 3D TIFF images.
