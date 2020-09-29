@@ -374,7 +374,7 @@ while(isOpen(BoardID))
 					if(CamCur == 2)run("Flip Horizontally");	
 						
 					// Optionally apply cropping to right side tile grid to reduce overlap
-					if((DualSide)&&(CropFracWidth!=0))
+					if((ShowDual)&&(CropFracWidth!=0))
 					{
 						if((i==XdMax)&&(SidCur2==1))
 						{
@@ -482,50 +482,46 @@ while(isOpen(BoardID))
 	{
 		// Use mouse coordinates to locate active tile
 		getCursorLoc(x, y, z, flags);
-		mindst = 1/0;
-		minidx = 0;
-		for(i=0;i<lengthOf(XTile);i++)
-		{
-			dst = sqrt(pow(x-XTile[i],2)+pow(y-YTile[i],2));
-			if(dst<mindst)
-			{
-				mindst = dst;
-				minidx = i;
-			}
-		}
 		
-		// Nudge CorrZx (global or column)
-		if(XiTile[minidx]>XdMin)
+		// Avoid pressing space returns -1/-1 coordinate
+		if(x>-1)
 		{
-			if(x<XTile[minidx])
+			mindst = 1/0;
+			minidx = 0;
+			N = lengthOf(XTile)/2;
+			for(i=(SidCur-1)*N;i<SidCur*N;i++)
 			{
-				XdMin = XiTile[minidx]-1;
-				YdMin = YiTile[minidx];
-				XdMax = XiTile[minidx];
-				YdMax = YiTile[minidx];
-				if(NudgeMode == true)
+				dst = sqrt(pow(x-XTile[i],2)+pow(y-YTile[i],2));
+				if(dst<mindst)
 				{
-					if(FreeZxyCorr==false)CorrZX[CamCur-1+2*(SidCur-1)] = CorrZX[CamCur-1+2*(SidCur-1)] + (-Steps+2*Steps*(y<=YTile[minidx]));
-					else for(i=XiTile[minidx];i<=(XMax-XMin);i++)for(j=YiTile[minidx];j<=(YMax-YMin);j++)ZManOffs[j+i*(YMax+1-YMin)+(SidCur-1)*(YMax+1-YMin)*(XMax+1-XMin)] = ZManOffs[j+i*(YMax+1-YMin)+(SidCur-1)*(YMax+1-YMin)*(XMax+1-XMin)] + (-Steps+2*Steps*(y<=YTile[minidx]));
-					//else for(i=XiTile[minidx];i<=(XMax-XMin);i++)for(j=0;j<=(YMax-YMin);j++)ZManOffs[j+i*(YMax+1-YMin)+(SidCur-1)*(YMax+1-YMin)*(XMax+1-XMin)] = ZManOffs[j+i*(YMax+1-YMin)+(SidCur-1)*(YMax+1-YMin)*(XMax+1-XMin)] + (-Steps+2*Steps*(y<=YTile[minidx]));
+					mindst = dst;
+					minidx = i;
 				}
-				ShowDual = false;
-				ReDraw = true;
-				NudgeMode = true;
 			}
-			else
+			
+			// Nudge CorrZx (global or column)
+			if(XiTile[minidx]>XdMin)
 			{
-				XdMin = XMin;
-				YdMin = YMin;
-				XdMax = XMax;
-				YdMax = YMax;
-				ReDraw = true;
-				NudgeMode = false;
+				if(x<XTile[minidx])
+				{
+					XdMin = XiTile[minidx]-1;
+					YdMin = YiTile[minidx];
+					XdMax = XiTile[minidx];
+					YdMax = YiTile[minidx];
+					if(NudgeMode == true)
+					{
+						if(FreeZxyCorr==false)CorrZX[CamCur-1+2*(SidCur-1)] = CorrZX[CamCur-1+2*(SidCur-1)] + (-Steps+2*Steps*(y<=YTile[minidx]));
+						else for(i=XiTile[minidx];i<=(XMax-XMin);i++)for(j=YiTile[minidx];j<=(YMax-YMin);j++)ZManOffs[j+i*(YMax+1-YMin)+(SidCur-1)*(YMax+1-YMin)*(XMax+1-XMin)] = ZManOffs[j+i*(YMax+1-YMin)+(SidCur-1)*(YMax+1-YMin)*(XMax+1-XMin)] + (-Steps+2*Steps*(y<=YTile[minidx]));
+						//else for(i=XiTile[minidx];i<=(XMax-XMin);i++)for(j=0;j<=(YMax-YMin);j++)ZManOffs[j+i*(YMax+1-YMin)+(SidCur-1)*(YMax+1-YMin)*(XMax+1-XMin)] = ZManOffs[j+i*(YMax+1-YMin)+(SidCur-1)*(YMax+1-YMin)*(XMax+1-XMin)] + (-Steps+2*Steps*(y<=YTile[minidx]));
+					}
+					else showStatus("Tile adjustment mode");
+					ShowDual = false;
+					ReDraw = true;
+					NudgeMode = true;
+				}
 			}
-		}
-		// Nudge CorrZy (global or row)
-		else 
-		{
+			
+			// Nudge CorrZy (global or row)
 			if(YiTile[minidx]>YdMin)
 			{
 				if(y<YTile[minidx])
@@ -544,25 +540,17 @@ while(isOpen(BoardID))
 					ReDraw = true;
 					NudgeMode = true;
 				}
-				else
-				{
-					XdMin = XMin;
-					YdMin = YMin;
-					XdMax = XMax;
-					YdMax = YMax;
-					ReDraw = true;
-					NudgeMode = false;
-				}
+			}
+	
+			// Actions from left uppermost visible tile
+			if((XiTile[minidx]==XdMin)&&(YiTile[minidx]==YdMin))
+			{
+				// Nudge current Z slice
+				ZCur = ZCur + (-1+2*(x>XTile[minidx]))*Steps;
+				ReDraw = true;	
 			}
 		}
-
-		// Actions from left uppermost visible tile
-		if((XiTile[minidx]==XdMin)&&(YiTile[minidx]==YdMin))
-		{
-			// Nudge current Z slice
-			ZCur = ZCur + (-1+2*(x>XTile[minidx]))*Steps;
-			ReDraw = true;	
-		}
+		else showStatus("Move mouse");
 
 		// Wait shift to be released
 		while(isKeyDown("shift"))wait(50);
@@ -571,9 +559,17 @@ while(isOpen(BoardID))
 	// Open configuration panel
 	if(isKeyDown("alt"))
 	{
-
-		//if(isActive(BoardID))
-		if(1)
+		//Exit nudge mode and restore complete grid
+		if(NudgeMode==true)
+		{
+			XdMin = XMin;
+			YdMin = YMin;
+			XdMax = XMax;
+			YdMax = YMax;
+			ReDraw = true;
+			NudgeMode = false;
+		}
+		else
 		{	
 		// Dialog box: control panel
 		OldColorMode = ColorMode;
