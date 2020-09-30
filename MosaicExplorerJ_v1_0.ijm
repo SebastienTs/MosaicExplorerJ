@@ -916,7 +916,7 @@ while(isOpen(BoardID))
 			Dialog.addSlider("YdMin", YMin, YMax, YdMin);
 			Dialog.addSlider("YdMax", YMin, YMax, YdMax);
 			Dialog.addNumber("First slice", ZMin);
-			Dialog.addNumber("CAM Z slice switch", ZCur);
+			Dialog.addNumber("CAM union Z slice", ZCur);
 			Dialog.addNumber("Last slice", ZMax);
 			Dialog.addCheckbox("CAM2 low Z, CAM1 high Z", true);
 			Dialog.addCheckbox("Use auto CAM switch", false);
