@@ -1,5 +1,5 @@
 # MosaicExplorerJ
-An ImageJ script to align and stitch three-dimensional tiles and quickly explore terabyte-sized microscopy datasets.
+An ImageJ script to align and stitch three-dimensional tiles and quickly explore terabyte-size microscopy datasets.
 
 [Documentation](https://drive.google.com/file/d/1Hn2eJYZr9bDnp0TGWAxc7GBuVuu69H6R/view?usp=sharing)
 
