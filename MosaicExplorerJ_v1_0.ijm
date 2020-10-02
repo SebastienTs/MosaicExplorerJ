@@ -79,6 +79,7 @@ CAMOverlay = false;
 Steps = 1;
 BigSteps = 5;
 NudgeMode = false;
+SpaceMode = false;
 
 // Load tile grid alignment parameters from configuration file (if present)
 if(UseFileParams)
@@ -456,101 +457,110 @@ while(isOpen(BoardID))
 		ReDraw = false;
 	}
 
-	// Swap between single and big steps for Z nudging
+	// Adjust Z adjustment direction + switch between 1/BigSteps
 	if(isKeyDown("space"))
 	{
-		if(Steps == 1)
+
+		// Alsways flip Z step direction
+		Steps = -Steps;
+		
+		// If space is pressed twice in a row, swicth between 1 and BigSteps
+		if(SpaceMode == true)
 		{
-			Steps = BigSteps;
-			showStatus("Steps: "+d2s(BigSteps,0));
+			if(abs(Steps) == 1)Steps = Steps*BigSteps;
+			else Steps = Steps/abs(Steps);
+			SpaceMode = false;
 		}
-		else
-		{
-			if(Steps == BigSteps)
-			{
-				Steps = 1;
-				showStatus("Steps: 1");
-			}
-		}
+		else SpaceMode = true;
+		showStatus("Steps: "+d2s(Steps,0));
 		
 		// Wait space to be released
-		while(isKeyDown("space"))wait(50);	
+		while(isKeyDown("space"))wait(50);
 	}
 
 	// Shortcut to nudge Z slice and Z correction
 	if(isKeyDown("shift"))
 	{
+		// Exit "Space mode" (adjusting step)
+		SpaceMode = false;
+		 
 		// Use mouse coordinates to locate active tile
 		getCursorLoc(x, y, z, flags);
-		
-		// Avoid pressing space returns -1/-1 coordinate
-		if(x>-1)
+
+		// Use to avoid the nasty behaviour of IJ to "lose" cursor coordinates after pressing space
+		if(x == -1)
 		{
-			mindst = 1/0;
-			minidx = 0;
-			N = lengthOf(XTile)/2;
-			for(i=(SidCur-1)*N;i<SidCur*N;i++)
+			x = LastX;
+			y = LastY;
+		}
+		else
+		{
+			LastX = x;
+			LastY = y;
+		}
+		
+		mindst = 1/0;
+		minidx = 0;
+		N = lengthOf(XTile)/2;
+		for(i=(SidCur-1)*N;i<SidCur*N;i++)
+		{
+			dst = sqrt(pow(x-XTile[i],2)+pow(y-YTile[i],2));
+			if(dst<mindst)
 			{
-				dst = sqrt(pow(x-XTile[i],2)+pow(y-YTile[i],2));
-				if(dst<mindst)
-				{
-					mindst = dst;
-					minidx = i;
-				}
-			}
-			
-			// Nudge CorrZx (global or column)
-			if(XiTile[minidx]>XdMin)
-			{
-				if(x<XTile[minidx])
-				{
-					XdMin = XiTile[minidx]-1;
-					YdMin = YiTile[minidx];
-					XdMax = XiTile[minidx];
-					YdMax = YiTile[minidx];
-					if(NudgeMode == true)
-					{
-						if(FreeZxyCorr==false)CorrZX[CamCur-1+2*(SidCur-1)] = CorrZX[CamCur-1+2*(SidCur-1)] + (-Steps+2*Steps*(y<=YTile[minidx]));
-						else for(i=XiTile[minidx];i<=(XMax-XMin);i++)for(j=YiTile[minidx];j<=(YMax-YMin);j++)ZManOffs[j+i*(YMax+1-YMin)+(SidCur-1)*(YMax+1-YMin)*(XMax+1-XMin)] = ZManOffs[j+i*(YMax+1-YMin)+(SidCur-1)*(YMax+1-YMin)*(XMax+1-XMin)] + (-Steps+2*Steps*(y<=YTile[minidx]));
-						//else for(i=XiTile[minidx];i<=(XMax-XMin);i++)for(j=0;j<=(YMax-YMin);j++)ZManOffs[j+i*(YMax+1-YMin)+(SidCur-1)*(YMax+1-YMin)*(XMax+1-XMin)] = ZManOffs[j+i*(YMax+1-YMin)+(SidCur-1)*(YMax+1-YMin)*(XMax+1-XMin)] + (-Steps+2*Steps*(y<=YTile[minidx]));
-					}
-					else showStatus("Tile adjustment mode");
-					ShowDual = false;
-					ReDraw = true;
-					NudgeMode = true;
-				}
-			}
-			
-			// Nudge CorrZy (global or row)
-			if(YiTile[minidx]>YdMin)
-			{
-				if(y<YTile[minidx])
-				{
-					XdMin = XiTile[minidx];
-					YdMin = YiTile[minidx]-1;
-					XdMax = XiTile[minidx];
-					YdMax = YiTile[minidx];
-					if(NudgeMode == true)
-					{
-						if(FreeZxyCorr==false)CorrZY[CamCur-1+2*(SidCur-1)] = CorrZY[CamCur-1+2*(SidCur-1)] + (-Steps+2*Steps*(x>XTile[minidx]));
-						else for(j=YiTile[minidx];j<=(YMax-YMin);j++)for(i=XiTile[minidx];i<=(XMax-XMin);i++)ZManOffs[j+i*(YMax+1-YMin)+(SidCur-1)*(YMax+1-YMin)*(XMax+1-XMin)] = ZManOffs[j+i*(YMax+1-YMin)+(SidCur-1)*(YMax+1-YMin)*(XMax+1-XMin)] + (-Steps+2*Steps*(x>XTile[minidx]));
-						//else for(j=YiTile[minidx];j<=(YMax-YMin);j++)for(i=0;i<=(XMax-XMin);i++)ZManOffs[j+i*(YMax+1-YMin)+(SidCur-1)*(YMax+1-YMin)*(XMax+1-XMin)] = ZManOffs[j+i*(YMax+1-YMin)+(SidCur-1)*(YMax+1-YMin)*(XMax+1-XMin)] + (-Steps+2*Steps*(x>XTile[minidx]));
-					}
-					ShowDual = false;
-					ReDraw = true;
-					NudgeMode = true;
-				}
-			}
-	
-			// Actions from left uppermost visible tile
-			if((XiTile[minidx]==XdMin)&&(YiTile[minidx]==YdMin))
-			{
-				// Nudge current Z slice
-				ZCur = ZCur + (-1+2*(x>XTile[minidx]))*Steps;
-				ReDraw = true;	
+				mindst = dst;
+				minidx = i;
 			}
 		}
-		else showStatus("Move mouse");
+		
+		// Nudge CorrZx (global or column)
+		if(XiTile[minidx]>XdMin)
+		{
+			if(x<XTile[minidx])
+			{
+				XdMin = XiTile[minidx]-1;
+				YdMin = YiTile[minidx];
+				XdMax = XiTile[minidx];
+				YdMax = YiTile[minidx];
+				if(NudgeMode == true)
+				{
+					if(FreeZxyCorr==false)CorrZX[CamCur-1+2*(SidCur-1)] = CorrZX[CamCur-1+2*(SidCur-1)] + Steps;
+					else for(i=XiTile[minidx];i<=(XMax-XMin);i++)for(j=YiTile[minidx];j<=(YMax-YMin);j++)ZManOffs[j+i*(YMax+1-YMin)+(SidCur-1)*(YMax+1-YMin)*(XMax+1-XMin)] = ZManOffs[j+i*(YMax+1-YMin)+(SidCur-1)*(YMax+1-YMin)*(XMax+1-XMin)] + Steps;
+				}
+				else showStatus("Tile adjustment mode");
+				ShowDual = false;
+				ReDraw = true;
+				NudgeMode = true;
+			}
+		}
+		
+		// Nudge CorrZy (global or row)
+		if(YiTile[minidx]>YdMin)
+		{
+			if(y<YTile[minidx])
+			{
+				XdMin = XiTile[minidx];
+				YdMin = YiTile[minidx]-1;
+				XdMax = XiTile[minidx];
+				YdMax = YiTile[minidx];
+				if(NudgeMode == true)
+				{
+					if(FreeZxyCorr==false)CorrZY[CamCur-1+2*(SidCur-1)] = CorrZY[CamCur-1+2*(SidCur-1)] + Steps;
+					else for(j=YiTile[minidx];j<=(YMax-YMin);j++)for(i=XiTile[minidx];i<=(XMax-XMin);i++)ZManOffs[j+i*(YMax+1-YMin)+(SidCur-1)*(YMax+1-YMin)*(XMax+1-XMin)] = ZManOffs[j+i*(YMax+1-YMin)+(SidCur-1)*(YMax+1-YMin)*(XMax+1-XMin)] + Steps;
+				}
+				ShowDual = false;
+				ReDraw = true;
+				NudgeMode = true;
+			}
+		}
+
+		// Actions from left uppermost visible tile
+		if((XiTile[minidx]==XdMin)&&(YiTile[minidx]==YdMin))
+		{
+			// Nudge current Z slice
+			ZCur = ZCur + (-1+2*(x>XTile[minidx]))*Steps;
+			ReDraw = true;	
+		}
+		
 
 		// Wait shift to be released
 		while(isKeyDown("shift"))wait(50);
@@ -576,6 +586,7 @@ while(isOpen(BoardID))
 		CamCurOld = CamCur;
 		CCurOld = CCur;
 		SidCurOld = SidCur;
+		BigStepsOld = BigSteps;
 		Dialog.create("Control Panel");
 		Dialog.addSlider("ZPos", ZMin, ZMax, ZCur);
 		Dialog.addSlider("CPos", 0, CMax, CCur);
@@ -609,6 +620,7 @@ while(isOpen(BoardID))
 			}
 		}
 		if(DualSide)Dialog.addNumber("ZRLCor", RLZCor[CamCur-1]);
+		Dialog.addNumber("BigSteps", BigSteps);
 		if(DualSide)Dialog.addCheckbox("Dual side mode", ShowDual);
 		if(EnableColorMode == true)Dialog.addCheckbox("Color mode", ColorMode);
 		Dialog.addCheckbox("Free Zxy Correction", FreeZxyCorr);
@@ -659,6 +671,7 @@ while(isOpen(BoardID))
 			}
 		}
 		if(DualSide)RLZCor[CamCurOld-1] = Dialog.getNumber();
+		BigSteps = Dialog.getNumber();
 		if(DualSide)ShowDual = Dialog.getCheckbox();
 		if(EnableColorMode == true)ColorMode = Dialog.getCheckbox();
 		FreeZxyCorr = Dialog.getCheckbox();
@@ -667,9 +680,16 @@ while(isOpen(BoardID))
 		ShowExtra = Dialog.getCheckbox();
 		ExportStack = Dialog.getCheckbox(); 
 		Exit = Dialog.getCheckbox();
-		
+
 		// Wait alt to be released
 		while(isKeyDown("alt"))wait(50);
+
+		// Adjust BigSteps
+		if(BigSteps != BigStepsOld)
+		{
+			Steps = Steps/abs(Steps)*BigSteps;
+			showStatus("Steps ="+d2s(Steps,0));
+		}
 		
 		// Trigger board redraw
 		ReDraw = true;
@@ -682,7 +702,6 @@ while(isOpen(BoardID))
 			Dialog.addSlider("XdMax", XMin, XMax, XdMax);
 			Dialog.addSlider("YdMin", YMin, YMax, YdMin);
 			Dialog.addSlider("YdMax", YMin, YMax, YdMax);
-			Dialog.addNumber("BigSteps", BigSteps);
 			Dialog.addMessage("CAM2 registration");
 			Dialog.addNumber("CAM2XCor", CAMXCor[SidCurOld-1]);
 			Dialog.addNumber("CAM2YCor", CAMYCor[SidCurOld-1]);
@@ -716,7 +735,6 @@ while(isOpen(BoardID))
 			XdMax = Dialog.getNumber();
 			YdMin = Dialog.getNumber();
 			YdMax = Dialog.getNumber();
-			BigSteps = Dialog.getNumber();
 			CAMXCor[SidCurOld-1] = Dialog.getNumber();
 			CAMYCor[SidCurOld-1] = Dialog.getNumber();
 			CAMAng[SidCurOld-1] = Dialog.getNumber();
