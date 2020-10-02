@@ -289,18 +289,19 @@ while(isOpen(BoardID))
 			SidMin = 1;
 			SidMax = 2;	
 		}
-		
+
 		// Create Ramp Mask if needed
 		if(StitchMode=="Ramp")
 		{
-			BlendMask(ImageWidth,OverlapX[CamCur-1]/100,OverlapY[CamCur-1]/100);
+			BlendMask(ImageWidth,OverlapX[CamCur-1]/100,OverlapY[CamCur-1]/100,1);
+			if(DualSide == true)BlendMask(ImageWidth,OverlapX[CamCur-1+2]/100,OverlapY[CamCur-1+2]/100,2);
 			selectImage(BoardID);
 		}
 		
 		// Paste all images from tile grid
 		for(SidCur2=SidMin;SidCur2<=SidMax;SidCur2++)
 		{
-			
+
 			// Effective XY size of a tile without overlap
 			CropWidth = round(ImageWidth*(100-OverlapX[CamCur-1+2*(SidCur2-1)])/100);
 			CropHeight = round(ImageHeight*(100-OverlapY[CamCur-1+2*(SidCur2-1)])/100);
@@ -348,7 +349,8 @@ while(isOpen(BoardID))
 					{
 						rename("Img");
 						run("32-bit");
-						imageCalculator("Multiply","Img","Mask");
+						if(SidCur2==1)imageCalculator("Multiply","Img","Mask1");
+						else imageCalculator("Multiply","Img","Mask2");
 						setMinAndMax(0,65535);
 						run("16-bit");
 					}
@@ -447,8 +449,13 @@ while(isOpen(BoardID))
 		// Close intensity ramp mask if opened
 		if(StitchMode=="Ramp")
 		{
-			selectImage("Mask");
+			selectImage("Mask1");
 			close();
+			if(DualSide)
+			{
+				selectImage("Mask2");
+				close();
+			}
 			selectImage(BoardID);
 		}
 
@@ -461,9 +468,6 @@ while(isOpen(BoardID))
 	if(isKeyDown("space"))
 	{
 
-		// Alsways flip Z step direction
-		Steps = -Steps;
-		
 		// If space is pressed twice in a row, swicth between 1 and BigSteps
 		if(SpaceMode == true)
 		{
@@ -471,7 +475,11 @@ while(isOpen(BoardID))
 			else Steps = Steps/abs(Steps);
 			SpaceMode = false;
 		}
-		else SpaceMode = true;
+		else // Invert step direction
+		{
+			SpaceMode = true;
+			Steps = -Steps;
+		}
 		showStatus("Steps: "+d2s(Steps,0));
 		
 		// Wait space to be released
@@ -985,8 +993,13 @@ while(isOpen(BoardID))
 				CEnd = CCur;
 			}
 
-			// Create Ramp Mask
-			if(StitchMode=="Ramp")BlendMask(ImageWidth,OverlapX[CamCur-1]/100,OverlapY[CamCur-1]/100);
+			// Create Ramp Mask if needed
+			if(StitchMode=="Ramp")
+			{
+				BlendMask(ImageWidth,OverlapX[CamCur-1]/100,OverlapY[CamCur-1]/100,1);
+				if(DualSide == true)BlendMask(ImageWidth,OverlapX[CamCur-1+2]/100,OverlapY[CamCur-1+2]/100,2);
+				selectImage(BoardID);
+			}
 
 			// Create blank image for slice by slice exportation
 			if(Convert == true) newImage("Slice", "8-bit black", ImageWidth*(XMax-XMin+1)*(ShowDual+1)+2*SideMargins, ImageHeight*(YMax-YMin+1)+2*SideMargins, 1);
@@ -1063,7 +1076,8 @@ while(isOpen(BoardID))
 						{
 							rename("Img");
 							run("32-bit");
-							imageCalculator("Multiply","Img","Mask");
+							if(SidCur2==1)imageCalculator("Multiply","Img","Mask1");
+							else imageCalculator("Multiply","Img","Mask2");
 							setMinAndMax(0,65535);
 							run("16-bit");
 						}
@@ -1154,8 +1168,13 @@ while(isOpen(BoardID))
 			}
 			if(StitchMode=="Ramp")
 			{
-				selectImage("Mask");
+				selectImage("Mask1");
 				close();
+				if(DualSide)
+				{
+					selectImage("Mask2");
+					close();
+				}
 				selectImage(BoardID);
 			}
 			setBatchMode("exit & display");
@@ -1166,14 +1185,14 @@ while(isOpen(BoardID))
 }
 
 // Function used to create the ramp intensity mask for smooth blending
-function BlendMask(ImgSize,OvlX,OvlY)
+function BlendMask(ImgSize,OvlX,OvlY,Side)
 {
 	newImage("MaskDS", "32-bit black", 256, 256, 1);
 	makeRectangle(round(256*OvlX*0.5), round(256*OvlY*0.5), round(256*(1-OvlX)), round(256*(1-OvlY)));
 	run("Set...", "value=1");
 	run("Select None");
 	run("Mean", "block_radius_x="+d2s(0.95*OvlX*256*0.5,0)+" block_radius_y="+d2s(0.95*OvlY*256*0.5,0));
-	run("Scale...", "x=- y=- width="+d2s(ImgSize,0)+" height="+d2s(ImgSize,0)+" interpolation=Bilinear average create title=Mask");
+	run("Scale...", "x=- y=- width="+d2s(ImgSize,0)+" height="+d2s(ImgSize,0)+" interpolation=Bilinear average create title=Mask"+d2s(Side,0));
 	selectImage("MaskDS");
 	close();
 }
