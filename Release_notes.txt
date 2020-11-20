@@ -1,0 +1,13 @@
+**Release notes**
+
+Version 1.1
+
+- Added in context help
+- Space invert current ZStep, pressing twice in a row switch step size
+- Now force to disable color mode while registering cameras (and merge cameras in red/green)
+- Hide camera slider during cameras registration
+- Tile Z correction can now be performed with the mouse located anywhere in the tile
+- Added warning when exporting images in Add blending mode
+- Avoid rotating/scaling/translating CAM2 when only exporting CAM2 (big speed up)
+- Small updated to namings and improvement of the documentation
+- Fixed bug for negative values in free Z offset mode
