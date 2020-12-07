@@ -1,3 +1,5 @@
+![](MosaicEmb4.png)
+
 # MosaicExplorerJ
 An ImageJ script to align and stitch three-dimensional tiles and quickly explore terabyte-size microscopy datasets.
 
@@ -8,8 +10,6 @@ See [F1000 Research article](https://f1000research.com/articles/9-1308).
 [Documentation v1.2](https://drive.google.com/file/d/1RYs7oXq8AxCgj1d6oq0vMrol0QcQIv4I/view?usp=sharing)
 
 [Test Datasets](https://drive.google.com/drive/folders/1SykCjqwbJ31qy1QKsWmk6Ro6qxr9oYaa?usp=sharing)
-
-![](MosaicEmb4.png)
 
 **Emb4_4x5Mosaic_2CAMs_595GB (318 GB compressed)**
 Mouse embryo head, 4 columns x 5 rows mosaic, 2 camera views, dividing nuclei in PH3-A488 fluorescence channel. The 3D tiles are stored as series of 2D TIFF files. The original dataset is 1.19 TB in size (2 fluorescence channels).
