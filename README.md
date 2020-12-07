@@ -3,7 +3,7 @@
 # MosaicExplorerJ
 An ImageJ script to align and stitch three-dimensional tiles and quickly explore terabyte-size microscopy datasets.
 
-See [F1000 Research article](https://f1000research.com/articles/9-1308).
+[F1000 Research article](https://f1000research.com/articles/9-1308)
 
 [Documentation v1.0](https://drive.google.com/file/d/1Hn2eJYZr9bDnp0TGWAxc7GBuVuu69H6R/view?usp=sharing) (F1000 Research article submission)
 
