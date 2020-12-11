@@ -1,6 +1,6 @@
 **Release notes**
 
-Version 1.1
+Version 1.2
 
 - Added in context help
 - Space invert current ZStep, pressing twice in a row switch step size
@@ -11,3 +11,11 @@ Version 1.1
 - Avoid rotating/scaling/translating CAM2 when only exporting CAM2 (big speed up)
 - Small updated to namings and improvement of the documentation
 - Fixed bug for negative values in free Z offset mode
+
+Version 1.4
+
+- Support for illumination correction (1D linear or flat field images)
+- Added 16 Color LUT to check intensity level
+- Fixed issue with Ramp stitching mode
+- Reshuffled UI and improved help (from F1 after installing macro)
+- Prevented glitch when moving sliders from Control Panel and entering Grid+CAM+LR Panel wihout refreshing display
