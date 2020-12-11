@@ -7,7 +7,7 @@ An ImageJ script to align and stitch three-dimensional tiles and quickly explore
 
 [Documentation v1.0](https://drive.google.com/file/d/1Hn2eJYZr9bDnp0TGWAxc7GBuVuu69H6R/view?usp=sharing) (F1000 Research article submission)
 
-[Documentation v1.2](https://drive.google.com/file/d/1RYs7oXq8AxCgj1d6oq0vMrol0QcQIv4I/view?usp=sharing)
+[Documentation v1.4](https://drive.google.com/file/d/19vM4tPypnr9aG2dTaA9363OO9Xrl3vTU/view?usp=sharing) (Post review initial release)
 
 [Test Datasets](https://drive.google.com/drive/folders/1SykCjqwbJ31qy1QKsWmk6Ro6qxr9oYaa?usp=sharing)
 
