@@ -12,6 +12,9 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////
 
+macro "MosaicExplorerJ" 
+{
+	
 // Tiles: 3D Images / subfolders / 2D Images naming convention
 XString = "--X";XDigits = 2;		// Tile grid X coordinate
 YString = "--Y";YDigits = 2;		// Tile grid Y coordinate
@@ -74,7 +77,7 @@ CorrRLX = newArray(0,0);
 CorrRLY = newArray(0,0);
 CropFracWidth = 0;  // Fractional crop width of left side last column / right side first column
 CorrRLZ = newArray(0,0);
-Steps = 1;
+Steps = 5;
 BigSteps = 5;
 RegRight = false;
 OverlayCAM1 = false;
@@ -261,11 +264,15 @@ else newImage("Board", "16-bit black", ImageWidth*(XMax-XMin+1)*(DualSide+1)+2*S
 BoardID = getImageID();
 
 // Main loop
+ShowHelp = true;
 while(isOpen(BoardID))
 {
 	// Help message
 	if((isOpen("CAM1"))&&(CAMOverlay==false))showStatus("Draw two pairs of matching points first, next a pair of matching points");
 	wait(50);
+
+	if(NudgeMode == true)showStatus("Tile Z correction mode: (Shift) Add Zstep (Space) Scroll Zstep (Alt) Stop");
+	if(ShowHelp == true)showStatus("Press F1 for command help (requires to install macro)");
 	
 	if(ReDraw == true)
 	{	
@@ -581,6 +588,9 @@ while(isOpen(BoardID))
 	// Open configuration panel
 	if(isKeyDown("alt"))
 	{
+		// We assume user read the message
+		ShowHelp = false;
+		
 		//Exit nudge mode and restore complete grid
 		if(NudgeMode==true)
 		{
@@ -638,7 +648,7 @@ while(isOpen(BoardID))
 		Dialog.addCheckbox("Free Zxy correction", FreeZxyCorr);
 		Dialog.addCheckbox("Intensity correction", IntCorr);
 		Dialog.addChoice("Stitch Mode", newArray("Add","Copy","Max","Ramp"), StitchMode);
-		if(DualSide)Dialog.addCheckbox("Dual side mode", ShowDual);
+		if(DualSide == true)Dialog.addCheckbox("Dual side mode", ShowDual);
 		if(EnableColorMode == true)Dialog.addCheckbox("Color mode", ColorMode);
 		if(EnableColorMode == true)Dialog.addChoice("LUT:", newArray("Grays", "16 Colors"), DisplayLUT);
 		if(selectionType()==5)Dialog.addCheckbox("Register OvlX & YCor --> OvlY & XCorr", false);
@@ -686,11 +696,11 @@ while(isOpen(BoardID))
 				}
 			}
 		}
-		if(DualSide)CorrRLZ[CamCurOld-1] = Dialog.getNumber();
+		if(DualSide == true)CorrRLZ[CamCurOld-1] = Dialog.getNumber();
 		FreeZxyCorr = Dialog.getCheckbox();
 		IntCorr = Dialog.getCheckbox();
 		StitchMode = Dialog.getChoice();
-		if(DualSide)ShowDual = Dialog.getCheckbox();
+		if(DualSide == true)ShowDual = Dialog.getCheckbox();
 		if(EnableColorMode == true)ColorMode = Dialog.getCheckbox();
 		if(EnableColorMode == true)DisplayLUT = Dialog.getChoice();
 		if(selectionType()==5)RegOvlX = Dialog.getCheckbox();
@@ -700,12 +710,15 @@ while(isOpen(BoardID))
 		Exit = Dialog.getCheckbox();
 
 		// Check if intensity calibration should be triggered
-		if((StitchMode=="Ramp")&&(StitchModeOld!="Ramp"))
+		if((DualSide == true)&&(EnableColorMode == true))
 		{
-			waitForUser("Ramp blending","- For dual-side illumination, OvlX MUST match LR overlap\n- Color mode will be disabled");
-			ColorMode = false;
+			if((StitchMode=="Ramp")&&(StitchModeOld!="Ramp"))
+			{
+				waitForUser("Ramp blending","- For dual-side illumination, OvlX MUST match LR overlap\n- Color mode will be disabled");
+				ColorMode = false;
+			}
 		}
-
+		
 		// Wait alt to be released
 		while(isKeyDown("alt"))wait(50);
 		
@@ -768,7 +781,7 @@ while(isOpen(BoardID))
 				if(selectionType()==5)Dialog.addCheckbox("Register RL", false);
 			}
 			Dialog.addMessage("Big step used for Z adjustments");
-			Dialog.addNumber("BigSteps", BigSteps);
+			Dialog.addNumber("Big step", BigSteps);
 			Dialog.show();
 			XdMin = Dialog.getNumber();
 			XdMax = Dialog.getNumber();
@@ -1346,7 +1359,9 @@ function BlendMask(OvlX,OvlY,Side,Chan,Cam,IntCorr)
 	}
 }
 
-macro "Help [F1]" 
+}
+
+macro "MosaicExplorerJ Help [F1]" 
 {
-	waitForUser("Mosaic Explorer Help","(Alt  ) Control Panel\n(Shift) Nudge Z (when cursor on upper left tile)\n(Shift) Nudge Z Correction (when cursor on tile to adjust)\n(Space) Swap ZStep\n(Line ) Register tile / right mosaic");
+	waitForUser("Mosaic Explorer Help","(Alt)        Open Control Panel\n(Shift)     Update Z position by Zstep (mouse cursor over top left tile)\n(Shift)     Update Tile Z Correction by Zstep (mouse cursor over tile to update)\n(Space)  Scroll Zstep\n(Line)     Register tile (from Control Panel)");
 }
