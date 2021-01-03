@@ -21,7 +21,3 @@ Mouse brain, left illumination side (2 columns x 8 rows mosaic), Blood vessels i
 **Emb3_2x2_Mosaic_2CAMs_12GB (8 GB compressed)**
 Mouse embryo head, 3D cropped out volume from the complete scan (4 columns x 4 rows), 2 columns x 2 rows mosaic, 2 camera views, dividing nuclei in PH3-A488 fluorescence channel. The 3D tiles are stored as series of 2D TIFF files. The original dataset is 866 GB in size (2 fluorescence channels).
 Note: should be opened with Dual camera ticked in MosaicExplorerJ to browse both camera views.
-
-**Deprecated**
-
-[Documentation v1.0](https://drive.google.com/file/d/1Hn2eJYZr9bDnp0TGWAxc7GBuVuu69H6R/view?usp=sharing) (F1000 Research article submission)
