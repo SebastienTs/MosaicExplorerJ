@@ -15,7 +15,7 @@ An ImageJ script to align and stitch three-dimensional tiles and quickly explore
 Mouse embryo head, 4 columns x 5 rows mosaic, 2 camera views, dividing nuclei in PH3-A488 fluorescence channel. The 3D tiles are stored as series of 2D TIFF files. The original dataset is 1.19 TB in size (2 fluorescence channels).
 Note: should be opened with Dual camera ticked in MosaicExplorerJ to browse both camera views.
 
-**Brain2_izq_2x8Mosaic_LeftSide_300GB (300 GB raw)**
+**Brain2_izq_2x8Mosaic_LeftSide_300GB (180 GB compressed)**
 Mouse brain, left illumination side (2 columns x 8 rows mosaic), Blood vessels in Tomato-Lectin fluorescence channel. The 2D tiles are stored as 3D TIFF images. The original dataset is 1.2 TB (2 sides and 2 fluorescent channels).
 
 **Emb3_2x2_Mosaic_2CAMs_12GB (8 GB compressed)**
