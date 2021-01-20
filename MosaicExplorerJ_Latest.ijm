@@ -2,8 +2,8 @@
 //
 // Name:	MosaicExplorer
 // Author: 	Sébastien Tosi (IRB/ADMCF)
-// Version:	1.4
-// Date:	10-12-2020
+// Version:	1.5
+// Date:	20-01-2021
 //	
 // Description: An ImageJ script to align and stitch three-dimensional tiles and quickly 
 //		explore terabyte-sized microscopy datasets.
@@ -12,9 +12,15 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////
 
-macro "MosaicExplorerJ" 
+macro "MosaicExplorerJ [F2]"
 {
-	
+
+// Color Blind Mode
+ColorBlind = false;
+
+// Default channel long names
+ChanStr = newArray("C00--L05","C01--L06","XXX--XXX","XXX--XXX","XXX--XXX","XXX--XXX","XXX--XXX","XXX--XXX");
+
 // Tiles: 3D Images / subfolders / 2D Images naming convention
 XString = "--X";XDigits = 2;		// Tile grid X coordinate
 YString = "--Y";YDigits = 2;		// Tile grid Y coordinate
@@ -23,9 +29,6 @@ RLString = "RL";RLDigits = 2;		// Illumination side (0/1)
 // Additional file naming convention for 2D images
 ZString = "Zb00--Z";ZDigits = 4;	// Z coordinate
 CAMString = "CAM"; 			// Camera side (1/2)
-// Default channel long names
-ChanStr = newArray("C00--L05","C01--L06","XXX--XXX","XXX--XXX","XXX--XXX","XXX--XXX","XXX--XXX","XXX--XXX");
-DisplayLUT = "Grays";
 
 // Close all images
 run("Close All");
@@ -42,6 +45,7 @@ for(c=0;c<8;c++)Dialog.addString("Channel "+d2s(c,0),ChanStr[c]);
 Dialog.addCheckbox("Dual side",true);
 Dialog.addCheckbox("Dual camera",true);
 Dialog.addCheckbox("Color mode",true);
+Dialog.addCheckbox("Auto Detect X,Y,Z,C",true);
 Dialog.show();
 ImageWidth = Dialog.getNumber();
 ImageHeight = Dialog.getNumber();
@@ -50,6 +54,7 @@ for(c=0;c<8;c++)ChanStr[c] = Dialog.getString();
 DualSide = Dialog.getCheckbox();
 DualCAM = Dialog.getCheckbox();
 EnableColorMode = Dialog.getCheckbox();
+AutoXYZC = Dialog.getCheckbox();
 
 // Check if the 3D tiles are subfolders of 2D tif files or multi-tiff files
 FileList = getFileList(RootFolder);
@@ -84,6 +89,7 @@ OverlayCAM1 = false;
 CAMOverlay = false;
 NudgeMode = false;
 SpaceMode = false;
+DisplayLUT = "Grays";
 
 // Load tile grid alignment parameters from configuration file (if present)
 if(UseFileParams)
@@ -208,7 +214,6 @@ for(i=0;i<lengthOf(FileList);i++)
 				close();
 				setBatchMode("exit & display");
 			}
-			ZCur = round((ZMax+ZMin)/2);
 			Test = true;
 		}
 		Name = FileList[i];
@@ -224,13 +229,41 @@ for(i=0;i<lengthOf(FileList);i++)
 		XMax = maxOf(XMax,XInd);
 		YMax = maxOf(YMax,YInd);
 		CMax = maxOf(CMax,CInd);
-		// Bounds of currently displayed tile grid
-		XdMin = XMin;	
-		XdMax = XMax;
-		YdMin = YMin;
-		YdMax = YMax;
 	}
 }
+
+// Overide detected X,Y,Z,C bounds
+if(!AutoXYZC)
+{
+	Dialog.create("Set dimensions manually");
+	Dialog.addNumber("XMin",0);
+	Dialog.addNumber("XMax",1);
+	Dialog.addNumber("YMin",0);
+	Dialog.addNumber("YMax",1);
+	Dialog.addNumber("ZMin",0);
+	Dialog.addNumber("ZMax",1);
+	Dialog.addNumber("CMin",0);
+	Dialog.addNumber("CMax",0);
+	Dialog.show();
+	XMin = Dialog.getNumber();
+	XMax = Dialog.getNumber();
+	YMin = Dialog.getNumber();
+	YMax = Dialog.getNumber();
+	ZMin = Dialog.getNumber();
+	ZMax = Dialog.getNumber();
+	CMin = Dialog.getNumber();
+	CMax = Dialog.getNumber();
+	Test = true;
+}
+
+// Bounds of currently displayed tile grid
+XdMin = XMin;	
+XdMax = XMax;
+YdMin = YMin;
+YdMax = YMax;
+
+// Current ZSlice
+ZCur = round((ZMax+ZMin)/2);
 
 // Check that a tile grid has been detected
 if((Test==false)||(isNaN(ZMax)))exit("Invalid root folder");
@@ -273,6 +306,18 @@ while(isOpen(BoardID))
 
 	if(NudgeMode == true)showStatus("Tile Z correction mode: (Shift) Add Zstep (Space) Scroll Zstep (Alt) Stop");
 	if(ShowHelp == true)showStatus("Press F1 for command help (requires to install macro)");
+
+	// Color blind mode LUTs
+	if(ColorBlind == true)
+	{
+		Col1 = "Cyan";
+		Col2 = "Yellow";
+	}
+	else
+	{
+		Col1 = "Red";
+		Col2 = "Green";
+	}
 	
 	if(ReDraw == true)
 	{	
@@ -368,17 +413,17 @@ while(isOpen(BoardID))
 						run("16-bit");
 					}
 					
-					// Color mode: color-code adjacent fields of view with alternating red/green
+					// Color mode: color-code adjacent fields of view with alternating red/green or cyan/yellow
 					if(EnableColorMode==true)
 					{						
 						if((ColorMode==true)&&(isOpen("CAM1")==false))
 						{
-							if((((j-YdMin)%2)==0)^(((i-XdMin)%2)==0)^(((SidCur2-1)==0)&&((XMax+1-XMin)%2==1))^(CamCur==1))run("Green");
-							else run("Red");	
+							if((((j-YdMin)%2)==0)^(((i-XdMin)%2)==0)^(((SidCur2-1)==0)&&((XMax+1-XMin)%2==1))^(CamCur==1))run(Col2);
+							else run(Col1);	
 						}
 						else
 						{ 
-							if(isOpen("CAM1")==true)run("Green");
+							if(isOpen("CAM1")==true)run(Col2);
 							else run(DisplayLUT);
 						}
 						if(DualSide)setMinAndMax(0,MaxInt[CCur]);
@@ -650,6 +695,7 @@ while(isOpen(BoardID))
 		Dialog.addChoice("Stitch Mode", newArray("Add","Copy","Max","Ramp"), StitchMode);
 		if(DualSide == true)Dialog.addCheckbox("Dual side mode", ShowDual);
 		if(EnableColorMode == true)Dialog.addCheckbox("Color mode", ColorMode);
+		if(EnableColorMode == true)Dialog.addCheckbox("Color blind", ColorBlind);
 		if(EnableColorMode == true)Dialog.addChoice("LUT:", newArray("Grays", "16 Colors"), DisplayLUT);
 		if(selectionType()==5)Dialog.addCheckbox("Register OvlX & YCor --> OvlY & XCorr", false);
 		if(selectionType()==5)Dialog.addCheckbox("Register OvlY & XCor only", false);
@@ -702,6 +748,7 @@ while(isOpen(BoardID))
 		StitchMode = Dialog.getChoice();
 		if(DualSide == true)ShowDual = Dialog.getCheckbox();
 		if(EnableColorMode == true)ColorMode = Dialog.getCheckbox();
+		if(EnableColorMode == true)ColorBlind = Dialog.getCheckbox();
 		if(EnableColorMode == true)DisplayLUT = Dialog.getChoice();
 		if(selectionType()==5)RegOvlX = Dialog.getCheckbox();
 		if(selectionType()==5)RegOvlY = Dialog.getCheckbox();
@@ -825,7 +872,7 @@ while(isOpen(BoardID))
 					run("Select None");
 					run("Duplicate...", "title=CAM1");
 					run("8-bit");
-					run("Red");
+					run(Col1);
 					CAMOverlay = true;
 					CamCur = 2; // Automatically switch to CAM2
 					selectImage(BoardID);
@@ -850,7 +897,7 @@ while(isOpen(BoardID))
 							run("Select None");
 							run("Duplicate...", "title=CAM1");
 							run("8-bit");
-							run("Red");
+							run(Col1);
 							CAMOverlay = false;
 							CamCur = 2; // Automatically switch to CAM2
 							selectImage(BoardID);
@@ -1343,13 +1390,15 @@ function BlendMask(OvlX,OvlY,Side,Chan,Cam,IntCorr)
 				if(Cam==2)if(IntX<=0)run("Flip Horizontally");
 				run("Multiply...", "value="+d2s(abs(2*IntX),2));
 				run("Add...", "value="+d2s(IntL-abs(IntX),2));
-				newImage("IntCorrY", "32-bit ramp", ImageWidth, ImageHeight, 1);
+				newImage("IntCorrY", "32-bit ramp", ImageHeight, ImageWidth, 1);
 				run("Rotate 90 Degrees Right");
 				if(IntY>0)run("Flip Vertically");
 				run("Multiply...", "value="+d2s(abs(2*IntY),2));
 				run("Add...", "value="+d2s(1-abs(IntY),2));
 				imageCalculator("Multiply", "Mask"+d2s(Side+1,0), "IntCorrX");
 				imageCalculator("Multiply", "Mask"+d2s(Side+1,0), "IntCorrY");
+				selectImage("Mask"+d2s(Side+1,0));
+				run("Min...", "value=1");
 				selectImage("IntCorrX");
 				close();
 				selectImage("IntCorrY");
