@@ -7,7 +7,9 @@ An ImageJ script to align and stitch three-dimensional tiles and quickly explore
 
 [Video Tutorials](https://drive.google.com/drive/folders/1D9u2VfKWA5n9ZLIgGOChw68wAa8bkJxR?usp=sharing)
 
-[F1000 Research article](https://f1000research.com/articles/9-1308)
+[NEUBIAS Academy Presentation](https://www.youtube.com/watch?t=2875&v=GE4gVN4IYd4&feature=youtu.be)
+
+[F1000 Research Article](https://f1000research.com/articles/9-1308)
 
 [Test Datasets](https://drive.google.com/drive/folders/1SykCjqwbJ31qy1QKsWmk6Ro6qxr9oYaa?usp=sharing)
 
