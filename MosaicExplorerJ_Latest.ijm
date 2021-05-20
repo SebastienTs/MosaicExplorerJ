@@ -2,8 +2,8 @@
 //
 // Name:	MosaicExplorer
 // Author: 	Sébastien Tosi (IRB/ADMCF)
-// Version:	1.5
-// Date:	20-01-2021
+// Version:	1.6
+// Date:	04-03-2021
 //	
 // Description: An ImageJ script to align and stitch three-dimensional tiles and quickly 
 //		explore terabyte-sized microscopy datasets.
@@ -89,6 +89,7 @@ OverlayCAM1 = false;
 CAMOverlay = false;
 NudgeMode = false;
 SpaceMode = false;
+FreeXYCorr = false;
 DisplayLUT = "Grays";
 
 // Load tile grid alignment parameters from configuration file (if present)
@@ -261,6 +262,13 @@ XdMin = XMin;
 XdMax = XMax;
 YdMin = YMin;
 YdMax = YMax;
+NCol = (XMax-XMin+1);
+NRow = (YMax-YMin+1);
+NFields = NRow*NCol;
+
+// Free XY correction (optional, only used to correct for residual error)
+FreeCorrX = newArray(NFields*4); // up to 2 cameras + 2 sides
+FreeCorrY = newArray(NFields*4);
 
 // Current ZSlice
 ZCur = round((ZMax+ZMin)/2);
@@ -356,6 +364,68 @@ while(isOpen(BoardID))
 			selectImage(BoardID);
 		}
 		
+		// Read free XY correction if needed
+		if(FreeXYCorr==true)
+		{
+			FileNameX = "ScanXCorr.csv";
+			FileNameY = "ScanYCorr.csv";
+			tstX = File.exists(RootFolder+FileNameX);
+			tstY = File.exists(RootFolder+FileNameY);
+			if(tstX&&tstY)
+			{
+				RawParams = File.openAsString(RootFolder+FileNameX);
+				RawParams = split(RawParams,"\n");
+				cntRow = 0;
+				for(n=0;n<4;n++)
+				{
+					for(j=0;j<NRow;j++)
+					{
+						CurrentRow = split(RawParams[cntRow]," ");
+						for(i=0;i<NCol;i++)
+						{
+							FreeCorrX[i+j*NCol+n*NFields] = CurrentRow[i];
+						}
+						cntRow = cntRow+1;
+					}
+					cntRow = cntRow+2;
+				}
+				RawParams = File.openAsString(RootFolder+FileNameY);
+				RawParams = split(RawParams,"\n");
+				cntRow = 0;
+				for(n=0;n<4;n++)
+				{
+					for(j=0;j<NRow;j++)
+					{
+						CurrentRow = split(RawParams[cntRow]," ");
+						for(i=0;i<NCol;i++)
+						{
+							FreeCorrY[i+j*NCol+n*NFields] = CurrentRow[i];
+						}
+						cntRow = cntRow+1;
+					}
+					cntRow = cntRow+2;
+				}
+			}
+			else
+			{
+				XYStr = "";
+				for(n=0;n<4;n++)
+				{
+					for(j=0;j<NRow;j++)
+					{
+						for(i=0;i<NCol;i++)
+						{
+							XYStr = XYStr + "0 ";
+						}
+						XYStr = XYStr + "\n";
+					}
+					XYStr = XYStr + "\n\n";
+				}
+				File.saveString(XYStr,RootFolder+FileNameX);
+				File.saveString(XYStr,RootFolder+FileNameY);
+			}
+		}
+		
 		// Paste all images from tile grid
 		for(SidCur2=SidMin;SidCur2<=SidMax;SidCur2++)
 		{
@@ -395,7 +465,7 @@ while(isOpen(BoardID))
 					{
 						ImageName = replace(ImageName, CString+IJ.pad(0,CDigits), CString+IJ.pad(CCur,CDigits));
 						// If an image is not found display a black image of same size instead
-						if((ZCorrected>0)&&(ZCorrected<ZMax)&&File.exists(RootFolder+ImageName))open(RootFolder+ImageName,1+ZCorrected+ZMax*(CamCur-1)*DualCAM);
+						if((ZCorrected>=0)&&(ZCorrected<=ZMax)&&File.exists(RootFolder+ImageName))open(RootFolder+ImageName,1+ZCorrected+ZMax*(CamCur-1)*DualCAM);
 						else newImage("Black", "16-bit black", ImageWidth, ImageHeight, 1);
 					}
 	
@@ -457,7 +527,7 @@ while(isOpen(BoardID))
 					close();
 					
 					// Paste the image at the correct location in the tile grid
-					makeRectangle(CropWidth*(i-XMin)-CorrX[CamCur-1+2*(SidCur2-1)]*j+SideMargins+CorrRLX[CamCur-1]*(SidCur2-1),CropHeight*(j-YMin)-CorrY[CamCur-1+2*(SidCur2-1)]*i+SideMargins+CorrRLY[CamCur-1]*(SidCur2-1),ImageWidth,ImageHeight);
+					makeRectangle(CropWidth*(i-XMin)-CorrX[CamCur-1+2*(SidCur2-1)]*j+SideMargins+CorrRLX[CamCur-1]*(SidCur2-1)+FreeCorrX[i+j*NCol+(CamCur-1+(SidCur2-1)*2)*NFields],CropHeight*(j-YMin)-CorrY[CamCur-1+2*(SidCur2-1)]*i+SideMargins+CorrRLY[CamCur-1]*(SidCur2-1)+FreeCorrY[i+j*NCol+(CamCur-1+(SidCur2-1)*2)*NFields],ImageWidth,ImageHeight);
 					run("Paste");
 				}
 			}
@@ -691,6 +761,7 @@ while(isOpen(BoardID))
 		}
 		if(DualSide)Dialog.addNumber("ZRLCor", CorrRLZ[CamCur-1]);
 		Dialog.addCheckbox("Free Zxy correction", FreeZxyCorr);
+		Dialog.addCheckbox("Free XY correction", FreeXYCorr);
 		Dialog.addCheckbox("Intensity correction", IntCorr);
 		Dialog.addChoice("Stitch Mode", newArray("Add","Copy","Max","Ramp"), StitchMode);
 		if(DualSide == true)Dialog.addCheckbox("Dual side mode", ShowDual);
@@ -744,6 +815,7 @@ while(isOpen(BoardID))
 		}
 		if(DualSide == true)CorrRLZ[CamCurOld-1] = Dialog.getNumber();
 		FreeZxyCorr = Dialog.getCheckbox();
+		FreeXYCorr = Dialog.getCheckbox();
 		IntCorr = Dialog.getCheckbox();
 		StitchMode = Dialog.getChoice();
 		if(DualSide == true)ShowDual = Dialog.getCheckbox();
@@ -1204,7 +1276,7 @@ while(isOpen(BoardID))
 						else
 						{
 							ImageName = replace(ImageName, CString+IJ.pad(0,CDigits), CString+IJ.pad(CCur,CDigits));
-							if((ZCorrected>0)&&(ZCorrected<ZMax)&&File.exists(RootFolder+ImageName))open(RootFolder+ImageName,1+ZCorrected+ZMax*(CamCur-1)*DualCAM);
+							if((ZCorrected>=0)&&(ZCorrected<=ZMax)&&File.exists(RootFolder+ImageName))open(RootFolder+ImageName,1+ZCorrected+ZMax*(CamCur-1)*DualCAM);
 							else newImage("Black", "16-bit black", ImageWidth, ImageHeight, 1);
 						}			
 						if((DualSide)&&(MaxInt[CCur+8]/MaxInt[CCur]!=1)&&(SidCur2==2))run("Multiply...", "value="+d2s(MaxInt[CCur]/MaxInt[CCur+8],4));
@@ -1239,8 +1311,8 @@ while(isOpen(BoardID))
 						run("Copy");
 						close();	
 						selectImage("Slice");
-						if(ShowDual==true)makeRectangle(CropWidth*(i-XMin)-CorrX[CamCur-1+2*(SidCur2-1)]*j+SideMargins+CorrRLX[CamCur-1]*(SidCur2-1),CropHeight*(j-YMin)-CorrY[CamCur-1+2*(SidCur2-1)]*i+SideMargins+CorrRLY[CamCur-1]*(SidCur2-1),ImageWidth,ImageHeight);
-						else makeRectangle(CropWidth*(i-XMin)-CorrX[CamCur-1+2*(SidCur2-1)]*j+SideMargins,CropHeight*(j-YMin)-CorrY[CamCur-1+2*(SidCur2-1)]*i+SideMargins,ImageWidth,ImageHeight);
+						if(ShowDual==true)makeRectangle(CropWidth*(i-XMin)-CorrX[CamCur-1+2*(SidCur2-1)]*j+SideMargins+CorrRLX[CamCur-1]*(SidCur2-1)+FreeCorrX[i+j*NCol+(CamCur-1+(SidCur2-1)*2)*NFields],CropHeight*(j-YMin)-CorrY[CamCur-1+2*(SidCur2-1)]*i+SideMargins+CorrRLY[CamCur-1]*(SidCur2-1)+FreeCorrY[i+j*NCol+(CamCur-1+(SidCur2-1)*2)*NFields],ImageWidth,ImageHeight);
+						else makeRectangle(CropWidth*(i-XMin)-CorrX[CamCur-1+2*(SidCur2-1)]*j+SideMargins+FreeCorrX[i+j*NCol+(CamCur-1+(SidCur2-1)*2)*NFields],CropHeight*(j-YMin)-CorrY[CamCur-1+2*(SidCur2-1)]*i+SideMargins+FreeCorrY[i+j*NCol+(CamCur-1+(SidCur2-1)*2)*NFields],ImageWidth,ImageHeight);
 						if(ComputeBB == 1) // Compute bounding box for CAM1 (same used for CAM2 if cropping is enabled)
 						{
 							CXs = CropWidth*(i-XMin)-CorrX[2*(SidCur2-1)]*j+SideMargins;
