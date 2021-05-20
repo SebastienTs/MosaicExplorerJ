@@ -26,3 +26,10 @@ Version 1.5
 - Support to manually set min/max X,Y,Z,C (use to explore/align mosaic while acquiring it)
 - Clipped combined XY linear intensity correction profiles to a minimum of 1 + fixed a bug when tiles are not squared
 - Call macro from F2 after installing it
+
+Version 1.6
+
+- Fixed a bug for multi-TIFF tiles when the first and last slices where not visible / exported
+- Added support for fine XY manual adjustement of all tiles. 
+  This is a rather experimental (and still undocumented) feature that should not be required for a valid scan.
+  
