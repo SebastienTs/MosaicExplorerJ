@@ -2,8 +2,8 @@
 //
 // Name:	MosaicExplorer
 // Author: 	Sébastien Tosi (IRB/ADMCF)
-// Version:	1.6
-// Date:	04-03-2021
+// Version:	1.7
+// Date:	05-26-2021
 //	
 // Description: An ImageJ script to align and stitch three-dimensional tiles and quickly 
 //		explore terabyte-sized microscopy datasets.
@@ -19,7 +19,7 @@ macro "MosaicExplorerJ [F2]"
 ColorBlind = false;
 
 // Default channel long names
-ChanStr = newArray("C00--L05","C01--L06","XXX--XXX","XXX--XXX","XXX--XXX","XXX--XXX","XXX--XXX","XXX--XXX");
+ChanStr = newArray("--C00","--C01","XXX--XXX","XXX--XXX","XXX--XXX","XXX--XXX","XXX--XXX","XXX--XXX");
 
 // Tiles: 3D Images / subfolders / 2D Images naming convention
 XString = "--X";XDigits = 2;		// Tile grid X coordinate
@@ -210,7 +210,7 @@ for(i=0;i<lengthOf(FileList);i++)
 				FileNameTemplate = FileList[i];
 				ZMin = 0;
 				setBatchMode(true);
-				run("TIFF Virtual Stack...", "open="+RootFolder+FileList[i]);
+				run("TIFF Virtual Stack...", "open=["+RootFolder+FileList[i]+"]");
 				ZMax = nSlices/(DualCAM+1)-1;
 				close();
 				setBatchMode("exit & display");
@@ -1330,6 +1330,12 @@ while(isOpen(BoardID))
 				}
 				ComputeBB = 0;
 				run("Select None");
+				if(Convert==0)
+				{
+					if(DualSide)setMinAndMax(0,MaxInt[CCur]);
+					else setMinAndMax(0,MaxInt[CCur+8*(SidCur2-1)]);
+				}
+				else setMinAndMax(0,255);
 				if((CamCur==2)&&(CAMAng[SidCur-1]!=0)&&(CAMAuto == true))run("Rotate... ", "angle="+d2s(CAMAng[SidCur-1],2)+" grid=1 interpolation=None");
 				if((CamCur==2)&&(CAMSca[SidCur-1]!=1)&&(CAMAuto == true))run("Scale...", "x="+d2s(CAMSca[SidCur-1],4)+" y="+d2s(CAMSca[SidCur-1],4)+" interpolation=Bilinear average");
 				if((CamCur==2)&&((CAMXCor[SidCur-1]!=0)||(CAMYCor[SidCur-1]!=0))&&(CAMAuto == true))run("Translate...", "x="+d2s(CAMXCor[SidCur-1],0)+" y="+d2s(CAMYCor[SidCur-1],0)+" interpolation=None");
