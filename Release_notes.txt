@@ -33,3 +33,7 @@ Version 1.6
 - Added support for fine XY manual adjustement of all tiles. 
   This is a rather experimental (and still undocumented) feature that should not be required for a valid scan.
   
+Version 1.7
+  
+- Fixed a bug when handling root folder with space characters in the path
+- Export images with contrast adjusted to current contrast settings
