@@ -2,8 +2,8 @@
 //
 // Name:	MosaicExplorer
 // Author: 	Sébastien Tosi (IRB/ADMCF)
-// Version:	1.7
-// Date:	05-26-2021
+// Version:	1.8
+// Date:	07-02-2022
 //	
 // Description: An ImageJ script to align and stitch three-dimensional tiles and quickly 
 //		explore terabyte-sized microscopy datasets.
@@ -425,6 +425,12 @@ while(isOpen(BoardID))
 				File.saveString(XYStr,RootFolder+FileNameY);
 			}
 		}
+
+		// Initialize optimal crop bounding box
+		if(CamCur == 1)
+		{
+			BBStartX = 1/0;BBStartY = 1/0;BBEndX = 0;BBEndY = 0;
+		}
 		
 		// Paste all images from tile grid
 		for(SidCur2=SidMin;SidCur2<=SidMax;SidCur2++)
@@ -528,6 +534,16 @@ while(isOpen(BoardID))
 					
 					// Paste the image at the correct location in the tile grid
 					makeRectangle(CropWidth*(i-XMin)-CorrX[CamCur-1+2*(SidCur2-1)]*j+SideMargins+CorrRLX[CamCur-1]*(SidCur2-1)+FreeCorrX[i+j*NCol+(CamCur-1+(SidCur2-1)*2)*NFields],CropHeight*(j-YMin)-CorrY[CamCur-1+2*(SidCur2-1)]*i+SideMargins+CorrRLY[CamCur-1]*(SidCur2-1)+FreeCorrY[i+j*NCol+(CamCur-1+(SidCur2-1)*2)*NFields],ImageWidth,ImageHeight);
+					if(CamCur == 1) // Compute bounding box for CAM1
+					{
+						getSelectionBounds(CXs, CYs, width, height);
+						CXe = CXs + width;
+						CYe = CYs + height;
+						if(CXs < BBStartX)BBStartX = CXs;
+						if(CYs < BBStartY)BBStartY = CYs;
+						if(CXe > BBEndX)BBEndX = CXe;
+						if(CYe > BBEndY)BBEndY = CYe;
+					}
 					run("Paste");
 				}
 			}
@@ -740,7 +756,6 @@ while(isOpen(BoardID))
 		Dialog.addMessage("ZCor");
 		if(FreeZxyCorr==false)
 		{
-			
 			Dialog.addNumber("ZxCor", CorrZX[CamCur-1+2*(SidCur-1)]);
 			Dialog.addNumber("ZyCor", CorrZY[CamCur-1+2*(SidCur-1)]);
 		}
@@ -1112,9 +1127,14 @@ while(isOpen(BoardID))
 		}
 
 		if((ExportStack == true)&&(StitchMode=="Add"))ExportStack=getBoolean("Are you sure you want to export with Add blending?");
+		if((ExportStack == true)&&(CamCur==2))
+		{
+			showMessage("Camera must be set to CAM1 to start exportation!");
+			ExportStack = false;
+		}
 
 		// Tile grid exportation
-		if(ExportStack == true)
+		if((ExportStack == true)&&(CamCur == 1))
 		{
 			// Exportation dialog box
 			SideMarginsBuf = SideMargins;ZCurBuf = ZCur;CCurBuf = CCur;CamCurBuf = CamCur;
@@ -1126,11 +1146,11 @@ while(isOpen(BoardID))
 			Dialog.addNumber("First slice", ZMin);
 			Dialog.addNumber("CAM union Z slice", ZCur);
 			Dialog.addNumber("Last slice", ZMax);
-			Dialog.addCheckbox("CAM2 low Z, CAM1 high Z", true);
-			if(DualCAM)Dialog.addCheckbox("Use auto CAM switch", true);
-			Dialog.addCheckbox("Convert to 8-bit", false);
+			Dialog.addCheckbox("Z Order: CAM2 first", true);
+			if(DualCAM)Dialog.addCheckbox("Auto CAM switch", true);
 			Dialog.addCheckbox("Export all channels", true);
-			Dialog.addCheckbox("Do not crop image", true);
+			Dialog.addCheckbox("Crop images", true);
+			Dialog.addCheckbox("Convert to 8-bit", false);
 			Dialog.addNumber("Sampling factor", 1);
 			Dialog.addCheckbox("Perform operation", true);
 			Dialog.show();
@@ -1144,9 +1164,9 @@ while(isOpen(BoardID))
 			CAMOrder = Dialog.getCheckbox();
 			if(DualCAM)CAMAuto = Dialog.getCheckbox();
 			else CAMAuto = false;
-			Convert = Dialog.getCheckbox();
 			AllChans = Dialog.getCheckbox();
-			NoCrop = Dialog.getCheckbox();
+			Crop = Dialog.getCheckbox();
+			Convert = Dialog.getCheckbox();
 			Samp = Dialog.getNumber();
 			Apply = Dialog.getCheckbox();
 			
@@ -1193,11 +1213,9 @@ while(isOpen(BoardID))
 			if(Convert == true) newImage("Slice", "8-bit black", ImageWidth*(XMax-XMin+1)*(ShowDual+1)+2*SideMargins, ImageHeight*(YMax-YMin+1)+2*SideMargins, 1);
 			else newImage("Slice", "16-bit black", ImageWidth*(XMax-XMin+1)*(ShowDual+1)+2*SideMargins, ImageHeight*(YMax-YMin+1)+2*SideMargins, 1);
 
-			// Loop over channels and slices
-			ComputeBB = 1;BBStartX = 1/0;BBStartY = 1/0;BBEndX = 0;BBEndY = 0;
+			// Loop over channels and slices			ComputeBB = 1;
 			for(CCur=CStart;CCur<=CEnd;CCur++)
 			{
-				
 			for(ZCur=ZStart;ZCur<=ZEnd;ZCur++)
 			{	
 				if(CAMAuto == true)
@@ -1313,17 +1331,6 @@ while(isOpen(BoardID))
 						selectImage("Slice");
 						if(ShowDual==true)makeRectangle(CropWidth*(i-XMin)-CorrX[CamCur-1+2*(SidCur2-1)]*j+SideMargins+CorrRLX[CamCur-1]*(SidCur2-1)+FreeCorrX[i+j*NCol+(CamCur-1+(SidCur2-1)*2)*NFields],CropHeight*(j-YMin)-CorrY[CamCur-1+2*(SidCur2-1)]*i+SideMargins+CorrRLY[CamCur-1]*(SidCur2-1)+FreeCorrY[i+j*NCol+(CamCur-1+(SidCur2-1)*2)*NFields],ImageWidth,ImageHeight);
 						else makeRectangle(CropWidth*(i-XMin)-CorrX[CamCur-1+2*(SidCur2-1)]*j+SideMargins+FreeCorrX[i+j*NCol+(CamCur-1+(SidCur2-1)*2)*NFields],CropHeight*(j-YMin)-CorrY[CamCur-1+2*(SidCur2-1)]*i+SideMargins+FreeCorrY[i+j*NCol+(CamCur-1+(SidCur2-1)*2)*NFields],ImageWidth,ImageHeight);
-						if(ComputeBB == 1) // Compute bounding box for CAM1 (same used for CAM2 if cropping is enabled)
-						{
-							CXs = CropWidth*(i-XMin)-CorrX[2*(SidCur2-1)]*j+SideMargins;
-							CXe = CXs + ImageWidth*(ShowDual+1);
-							CYs = CropHeight*(j-YMin)-CorrY[2*(SidCur2-1)]*i+SideMargins;
-							CYe = CYs + ImageHeight;
-							if(CXs < BBStartX)BBStartX = CXs;
-							if(CYs < BBStartY)BBStartY = CYs;
-							if(CXe > BBEndX)BBEndX = CXe;
-							if(CYe > BBEndY)BBEndY = CYe;
-						}
 						run("Paste");
 					}
 				}
@@ -1339,7 +1346,7 @@ while(isOpen(BoardID))
 				if((CamCur==2)&&(CAMAng[SidCur-1]!=0)&&(CAMAuto == true))run("Rotate... ", "angle="+d2s(CAMAng[SidCur-1],2)+" grid=1 interpolation=None");
 				if((CamCur==2)&&(CAMSca[SidCur-1]!=1)&&(CAMAuto == true))run("Scale...", "x="+d2s(CAMSca[SidCur-1],4)+" y="+d2s(CAMSca[SidCur-1],4)+" interpolation=Bilinear average");
 				if((CamCur==2)&&((CAMXCor[SidCur-1]!=0)||(CAMYCor[SidCur-1]!=0))&&(CAMAuto == true))run("Translate...", "x="+d2s(CAMXCor[SidCur-1],0)+" y="+d2s(CAMYCor[SidCur-1],0)+" interpolation=None");
-				if(NoCrop==false)
+				if(Crop==true)
 				{
 					makeRectangle(BBStartX,BBStartY,BBEndX-BBStartX+1,BBEndY-BBStartY+1);
 					run("Duplicate...", "title=Copy");
@@ -1360,7 +1367,7 @@ while(isOpen(BoardID))
 					if(ZCur>=0)save(SaveVirtualFolder+VolumeName+"_S"+IJ.pad(SidCur-1,RLDigits)+"_Z"+IJ.pad(ZCur,ZDigits)+"_C"+IJ.pad(CCur,CDigits)+".tif");
 					else save(SaveVirtualFolder+VolumeName+"_S"+IJ.pad(SidCur-1,RLDigits)+"_Z_"+IJ.pad(ZCur,ZDigits-1)+"_C"+IJ.pad(CCur,CDigits)+".tif");
 				}
-				if(NoCrop==false)
+				if(Crop==true)
 				{
 					selectImage(CopyID);
 					close();
@@ -1393,7 +1400,7 @@ while(isOpen(BoardID))
 			}
 			setBatchMode("exit & display");
 			}
-		}
+			}
 		}
 	}
 }
@@ -1428,15 +1435,14 @@ function BlendMask(OvlX,OvlY,Side,Chan,Cam,IntCorr)
 		else
 		{
 			// Arrays to store 1D linear intensity correction coefficients
-			IntCorL = newArray(1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1);
-			IntCorX = newArray(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0);
-			IntCorY = newArray(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0);
+			IntCorL = newArray(1,1,1,1,1,1,1,1);
+			IntCorX = newArray(0,0,0,0,0,0,0,0);
+			IntCorY = newArray(0,0,0,0,0,0,0,0);
 			FileName = "ScanIntCorr.csv";
 			tst = File.exists(RootFolder+FileName);
 			if(tst)
 			{
-				if(Cam == 2)Ofs = 8;
-				else Ofs = 0;
+				Ofs = Side*8+(Cam-1)*4;
 				RawParams = File.openAsString(RootFolder+FileName);
 				RawParams = split(RawParams,"\n");
 				Line = RawParams[0+Ofs];
@@ -1448,20 +1454,11 @@ function BlendMask(OvlX,OvlY,Side,Chan,Cam,IntCorr)
 				Line = RawParams[2+Ofs];
 				Params = split(Line,",");
 				for(i=0;i<8;i++)IntCorY[i] = parseFloat(Params[i]);
-				Line = RawParams[4+Ofs];
-				Params = split(Line,",");
-				for(i=0;i<8;i++)IntCorL[i+8] = parseFloat(Params[i]);
-				Line = RawParams[5+Ofs];
-				Params = split(Line,",");
-				for(i=0;i<8;i++)IntCorX[i+8] = parseFloat(Params[i]);
-				Line = RawParams[6+Ofs];
-				Params = split(Line,",");
-				for(i=0;i<8;i++)IntCorY[i+8] = parseFloat(Params[i]);
 			}
-			IntL = IntCorL[Chan+8*Side];
-			IntX = IntCorX[Chan+8*Side];
-			IntY = IntCorY[Chan+8*Side];
-			if((IntY!=0)||(IntX!=0))
+			IntL = IntCorL[Chan];
+			IntX = IntCorX[Chan];
+			IntY = IntCorY[Chan];
+			if((IntL!=1)||(IntY!=0)||(IntX!=0))
 			{
 				newImage("IntCorrX", "32-bit ramp", ImageWidth, ImageHeight, 1);
 				if(Cam==1)if(IntX>0)run("Flip Horizontally");
