@@ -37,3 +37,10 @@ Version 1.7
   
 - Fixed a bug when handling root folder with space characters in the path
 - Export images with contrast adjusted to current contrast settings
+
+Version 1.8
+
+- Optimized cropping area when exporting images with crop enabled, the area is now tightly adjusted to CAM1 images
+- Fixed a bug when using intensity correction in dual lightsheet experiments
+
+- 
