@@ -278,9 +278,9 @@ if((Test==false)||(isNaN(ZMax)))exit("Invalid root folder");
 
 // Last diaplayed tile center tables
 XTile = newArray((XMax-XMin+1)*(YMax-YMin+1)*2);
-YTile = newArray((YMax-YMin+1)*(YMax-YMin+1)*2);
+YTile = newArray((XMax-XMin+1)*(YMax-YMin+1)*2);
 XiTile = newArray((XMax-XMin+1)*(YMax-YMin+1)*2);
-YiTile = newArray((YMax-YMin+1)*(YMax-YMin+1)*2);
+YiTile = newArray((XMax-XMin+1)*(YMax-YMin+1)*2);
 
 // Check that number of channels does not exceed 8
 if(CMax>8)
@@ -1127,14 +1127,16 @@ while(isOpen(BoardID))
 		}
 
 		if((ExportStack == true)&&(StitchMode=="Add"))ExportStack=getBoolean("Are you sure you want to export with Add blending?");
-		if((ExportStack == true)&&(CamCur==2))
+		
+if((ExportStack == true)&&(CamCur==2))
 		{
 			showMessage("Camera must be set to CAM1 to start exportation!");
 			ExportStack = false;
 		}
 
 		// Tile grid exportation
-		if((ExportStack == true)&&(CamCur == 1))
+		if((ExportStack == true)
+&&(CamCur == 1))
 		{
 			// Exportation dialog box
 			SideMarginsBuf = SideMargins;ZCurBuf = ZCur;CCurBuf = CCur;CamCurBuf = CamCur;
@@ -1213,7 +1215,8 @@ while(isOpen(BoardID))
 			if(Convert == true) newImage("Slice", "8-bit black", ImageWidth*(XMax-XMin+1)*(ShowDual+1)+2*SideMargins, ImageHeight*(YMax-YMin+1)+2*SideMargins, 1);
 			else newImage("Slice", "16-bit black", ImageWidth*(XMax-XMin+1)*(ShowDual+1)+2*SideMargins, ImageHeight*(YMax-YMin+1)+2*SideMargins, 1);
 
-			// Loop over channels and slices			ComputeBB = 1;
+			// Loop over channels and slices
+			ComputeBB = 1;
 			for(CCur=CStart;CCur<=CEnd;CCur++)
 			{
 			for(ZCur=ZStart;ZCur<=ZEnd;ZCur++)
